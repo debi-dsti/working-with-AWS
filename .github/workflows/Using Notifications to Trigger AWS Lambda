@@ -1,0 +1,3 @@
+Many AWS services can automatically generate notifications when events occur. These notifications can be used to trigger automated actions without requiring human intervention.
+
+In this lab, you will create an AWS Lambda function that will automatically snapshot and tag new Amazon EC2 instances launched by Auto Scaling.
