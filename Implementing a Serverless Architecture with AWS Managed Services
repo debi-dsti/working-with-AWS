@@ -1,0 +1,3 @@
+n this lab, you will use AWS managed services to implement a serverless architecture.
+
+Your system will receive a transactions file, automatically load its contents into a database and send notifications. This will be done without using any Amazon EC2 servers.
