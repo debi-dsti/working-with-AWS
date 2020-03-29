@@ -30,3 +30,175 @@ for label in detect_labels(BUCKET, KEY):
 	Human - 99.2351226807%
 	Clothing - 96.7797698975%
 	Suit - 96.7797698975%,
+	
+	2. face detection......
+	import boto3
+
+BUCKET = "amazon-rekognition"
+KEY = "test.jpg"
+FEATURES_BLACKLIST = ("Landmarks", "Emotions", "Pose", "Quality", "BoundingBox", "Confidence")
+
+def detect_faces(bucket, key, attributes=['ALL'], region="eu-west-1"):
+	rekognition = boto3.client("rekognition", region)
+	response = rekognition.detect_faces(
+	    Image={
+			"S3Object": {
+				"Bucket": bucket,
+				"Name": key,
+			}
+		},
+	    Attributes=attributes,
+	)
+	return response['FaceDetails']
+
+for face in detect_faces(BUCKET, KEY):
+	print "Face ({Confidence}%)".format(**face)
+	# emotions
+	for emotion in face['Emotions']:
+		print "  {Type} : {Confidence}%".format(**emotion)
+	# quality
+	for quality, value in face['Quality'].iteritems():
+		print "  {quality} : {value}".format(quality=quality, value=value)
+	# facial features
+	for feature, data in face.iteritems():
+		if feature not in FEATURES_BLACKLIST:
+			print "  {feature}({data[Value]}) : {data[Confidence]}%".format(feature=feature, data=data)
+
+"""
+	Expected output:
+	Face (99.945602417%)
+	  SAD : 14.6038293839%
+	  HAPPY : 12.3668470383%
+	  DISGUSTED : 3.81404161453%
+	  Sharpness : 10.0
+	  Brightness : 31.4071826935
+	  Eyeglasses(False) : 99.990234375%
+	  Sunglasses(False) : 99.9500656128%
+	  Gender(Male) : 99.9291687012%
+	  EyesOpen(True) : 99.9609146118%
+	  Smile(False) : 99.8329467773%
+	  MouthOpen(False) : 98.3746566772%
+	  Mustache(False) : 98.7549591064%
+	  Beard(False) : 92.758682251%
+
+3.compare face
+import boto3
+
+BUCKET = "amazon-rekognition"
+KEY_SOURCE = "test.jpg"
+KEY_TARGET = "target.jpg"
+
+def compare_faces(bucket, key, bucket_target, key_target, threshold=80, region="eu-west-1"):
+	rekognition = boto3.client("rekognition", region)
+	response = rekognition.compare_faces(
+	    SourceImage={
+			"S3Object": {
+				"Bucket": bucket,
+				"Name": key,
+			}
+		},
+		TargetImage={
+			"S3Object": {
+				"Bucket": bucket_target,
+				"Name": key_target,
+			}
+		},
+	    SimilarityThreshold=threshold,
+	)
+	return response['SourceImageFace'], response['FaceMatches']
+
+
+source_face, matches = compare_faces(BUCKET, KEY_SOURCE, BUCKET, KEY_TARGET)
+
+# the main source face
+print "Source Face ({Confidence}%)".format(**source_face)
+
+# one match for each target face
+for match in matches:
+	print "Target Face ({Confidence}%)".format(**match['Face'])
+	print "  Similarity : {}%".format(match['Similarity'])
+
+"""
+    Expected output:
+    
+    Source Face (99.945602417%)
+    Target Face (99.9963378906%)
+      Similarity : 89.0%
+"""
+
+4.index face
+import boto3
+
+BUCKET = "amazon-rekognition"
+KEY = "test.jpg"
+IMAGE_ID = KEY  # S3 key as ImageId
+COLLECTION = "my-collection-id"
+
+# Note: you have to create the collection first!
+# rekognition.create_collection(CollectionId=COLLECTION)
+
+def index_faces(bucket, key, collection_id, image_id=None, attributes=(), region="eu-west-1"):
+	rekognition = boto3.client("rekognition", region)
+	response = rekognition.index_faces(
+		Image={
+			"S3Object": {
+				"Bucket": bucket,
+				"Name": key,
+			}
+		},
+		CollectionId=collection_id,
+		ExternalImageId=image_id,
+	    DetectionAttributes=attributes,
+	)
+	return response['FaceRecords']
+
+
+for record in index_faces(BUCKET, KEY, COLLECTION, IMAGE_ID):
+	face = record['Face']
+	# details = record['FaceDetail']
+	print "Face ({}%)".format(face['Confidence'])
+	print "  FaceId: {}".format(face['FaceId'])
+	print "  ImageId: {}".format(face['ImageId'])
+
+
+"""
+	Expected output:
+	Face (99.945602417%)
+	  FaceId: dc090f86-48a4-5f09-905f-44e97fb1d455
+	  ImageId: f974c8d3-7519-5796-a08d-b96e0f2fc242
+
+5. search face
+import boto3
+
+BUCKET = "amazon-rekognition"
+KEY = "search.jpg"
+COLLECTION = "my-collection-id"
+
+def search_faces_by_image(bucket, key, collection_id, threshold=80, region="eu-west-1"):
+	rekognition = boto3.client("rekognition", region)
+	response = rekognition.search_faces_by_image(
+		Image={
+			"S3Object": {
+				"Bucket": bucket,
+				"Name": key,
+			}
+		},
+		CollectionId=collection_id,
+		FaceMatchThreshold=threshold,
+	)
+	return response['FaceMatches']
+
+for record in search_faces_by_image(BUCKET, KEY, COLLECTION):
+	face = record['Face']
+	print "Matched Face ({}%)".format(record['Similarity'])
+	print "  FaceId : {}".format(face['FaceId'])
+	print "  ImageId : {}".format(face['ExternalImageId'])
+
+
+"""
+	Expected output:
+	Matched Face (96.6647949219%)
+	  FaceId : dc090f86-48a4-5f09-905f-44e97fb1d455
+	  ImageId : test.jpg
+
+	
