@@ -29,4 +29,4 @@ for label in detect_labels(BUCKET, KEY):
 	Person - 99.2436447144%
 	Human - 99.2351226807%
 	Clothing - 96.7797698975%
-	Suit - 96.7797698975%
+	Suit - 96.7797698975%,
