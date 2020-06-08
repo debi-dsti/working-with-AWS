@@ -1,0 +1,12 @@
+Introduction to Amazon CloudFront
+Version 1.0.6 (spl85)
+
+Overview
+This guide introduces you to Amazon CloudFront. In this lab you will create an Amazon CloudFront distribution that will use a CloudFront domain name in the url to distribute a publicly accessible image file stored in an Amazon S3 bucket.
+
+Topics covered
+By the end of this lab, you will be able to:
+
+Create a new Amazon CloudFront distribution
+Use your Amazon CloudFront distribution to serve an image file
+Delete your Amazon CloudFront distribution when it is no longer required
